@@ -59,7 +59,7 @@ client.on("interactionCreate", async interaction => {
         const userId = interaction.user.id;
         const now = Date.now();
 
-        // ================= COOLDOWN CHECK =================
+        // ===== COOLDOWN =====
         const nextTime = cooldown.get(userId);
 
         if (nextTime && now < nextTime) {
@@ -67,7 +67,7 @@ client.on("interactionCreate", async interaction => {
 
             return interaction.reply({
                 content:
-                    `⏰ Kolejny raz możesz losować za:
+`⏰ Kolejny raz możesz losować za:
 **${formatTime(left)}**`,
                 ephemeral: true
             });
@@ -75,7 +75,7 @@ client.on("interactionCreate", async interaction => {
 
         cooldown.set(userId, now + COOLDOWN_TIME);
 
-        // ================= LOSOWANIE =================
+        // ===== LOSOWANIE =====
         const roll = Math.random() * 100;
 
         let reward = null;
@@ -98,7 +98,7 @@ client.on("interactionCreate", async interaction => {
             chance = 20;
         }
 
-        // ================= WIN =================
+        // ===== WYGRANA =====
         if (reward) {
             return interaction.reply({
                 embeds: [
@@ -106,10 +106,7 @@ client.on("interactionCreate", async interaction => {
                         .setTitle("🎉 WYGRANA!")
                         .setColor("#f1c40f")
                         .setDescription(
-                            `💰 **Wygrałeś: ${reward}**
-
-📜 Szansa: **${chance}%**
-🎲 Wynik: ${roll.toFixed(2)}%
+`💰 **Wygrałeś: ${reward}**
 
 🎫 Po nagrodę napisz na ticket
 ⏰ Kolejne losowanie za: **2h**`
@@ -118,16 +115,14 @@ client.on("interactionCreate", async interaction => {
             });
         }
 
-        // ================= LOSS =================
+        // ===== PRZEGRANA =====
         return interaction.reply({
             embeds: [
                 new EmbedBuilder()
                     .setTitle("💀 PRZEGRANA")
                     .setColor("#e74c3c")
                     .setDescription(
-                        `❌ Nic nie wygrałeś
-
-🎲 Wynik: ${roll.toFixed(2)}%
+`❌ Nic nie wygrałeś
 
 ⏰ Kolejne losowanie za: **2h**`
                     )
