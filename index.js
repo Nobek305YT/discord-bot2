@@ -144,8 +144,6 @@ client.on("interactionCreate", async interaction => {
                         .setDescription(
 `💰 **Wygrałeś: ${reward}**
 
-📜 Szansa: **${chance}%**
-
 🎫 Po nagrodę napisz na ticket
 ⏰ Kolejne losowanie za: **2h**`
                         )
