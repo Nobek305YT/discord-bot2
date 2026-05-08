@@ -25,7 +25,7 @@ const COOLDOWN_TIME = 2 * 60 * 60 * 1000; // 2h
 // ================= BOOST PER USER =================
 const userBoosts = new Map();
 
-// 🔥 GLOBAL BOOST (NOWE)
+// 🔥 GLOBAL BOOST
 let globalBoost = null;
 
 // ===== FORMAT CZASU =====
@@ -60,7 +60,6 @@ client.once("ready", async () => {
             .setName("losowanieboost")
             .setDescription("Ustaw boost szans"),
 
-        // 🔥 NOWE - WYŁĄCZENIE BOOSTA
         new SlashCommandBuilder()
             .setName("losowanieboostend")
             .setDescription("Wyłącz globalny boost")
@@ -103,7 +102,6 @@ client.on("interactionCreate", async interaction => {
 
         cooldown.set(userId, now + COOLDOWN_TIME);
 
-        // 🔥 PRIORYTET: GLOBAL BOOST → USER BOOST → DOMYŚLNE
         const odds =
             globalBoost ||
             userBoosts.get(userId) || {
@@ -181,6 +179,14 @@ client.on("interactionCreate", async interaction => {
     // ================= BOOST START =================
     if (interaction.commandName === "losowanieboost") {
 
+        // 🔥 AKTUALNE PROCENTY
+        const current = globalBoost || {
+            m5: 1,
+            m3: 3,
+            m2: 7,
+            m1: 27
+        };
+
         const modal = new ModalBuilder()
             .setCustomId(`boost_global`)
             .setTitle("🌍 GLOBALNY BOOST");
@@ -189,25 +195,25 @@ client.on("interactionCreate", async interaction => {
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m5")
-                    .setLabel("5M %")
+                    .setLabel(`5M % (aktualnie ${current.m5}%)`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m3")
-                    .setLabel("3M %")
+                    .setLabel(`3M % (aktualnie ${current.m3}%)`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m2")
-                    .setLabel("2M %")
+                    .setLabel(`2M % (aktualnie ${current.m2}%)`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m1")
-                    .setLabel("1M %")
+                    .setLabel(`1M % (aktualnie ${current.m1}%)`)
                     .setStyle(TextInputStyle.Short)
             )
         );
