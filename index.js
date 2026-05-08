@@ -28,6 +28,9 @@ const userBoosts = new Map();
 // 🔥 GLOBAL BOOST
 let globalBoost = null;
 
+// ================= STATS =================
+const stats = new Map();
+
 // ===== FORMAT CZASU =====
 function formatTime(ms) {
     if (ms <= 0) return "0s";
@@ -62,8 +65,16 @@ client.once("ready", async () => {
 
         new SlashCommandBuilder()
             .setName("losowanieboostend")
-            .setDescription("Wyłącz globalny boost")
+            .setDescription("Wyłącz globalny boost"),
 
+        new SlashCommandBuilder()
+            .setName("losowaniestats")
+            .setDescription("Statystyki losowania")
+            .addUserOption(o =>
+                o.setName("user")
+                    .setDescription("Użytkownik")
+                    .setRequired(true)
+            )
     ].map(c => c.toJSON());
 
     const rest = new REST({ version: "10" }).setToken(TOKEN);
@@ -86,6 +97,11 @@ client.on("interactionCreate", async interaction => {
 
         const userId = interaction.user.id;
         const now = Date.now();
+
+        // stats init
+        if (!stats.has(userId)) {
+            stats.set(userId, { played: 0, wins: 0, losses: 0, biggestWin: 0 });
+        }
 
         const nextTime = cooldown.get(userId);
 
@@ -133,7 +149,15 @@ client.on("interactionCreate", async interaction => {
             chance = odds.m1;
         }
 
+        const s = stats.get(userId);
+        s.played++;
+
         if (reward) {
+            s.wins++;
+
+            const winValue = parseInt(reward.replace(/\D/g, ""));
+            if (winValue > s.biggestWin) s.biggestWin = winValue;
+
             return interaction.reply({
                 embeds: [
                     new EmbedBuilder()
@@ -149,6 +173,8 @@ client.on("interactionCreate", async interaction => {
             });
         }
 
+        s.losses++;
+
         return interaction.reply({
             embeds: [
                 new EmbedBuilder()
@@ -163,7 +189,35 @@ client.on("interactionCreate", async interaction => {
         });
     }
 
-    // ================= USUŃ COOLDOWN =================
+    // ================= STATS =================
+    if (interaction.commandName === "losowaniestats") {
+
+        const user = interaction.options.getUser("user");
+
+        const s = stats.get(user.id) || {
+            played: 0,
+            wins: 0,
+            losses: 0,
+            biggestWin: 0
+        };
+
+        return interaction.reply({
+            embeds: [
+                new EmbedBuilder()
+                    .setTitle(`📊 Statystyki ${user.username}`)
+                    .setColor("#3498db")
+                    .setDescription(
+`🎲 Łączne losowania: ${s.played}
+🏆 Wygrane: ${s.wins}
+💀 Przegrane: ${s.losses}
+💰 Biggest win: ${s.biggestWin} 💰`
+                    )
+            ],
+            ephemeral: true
+        });
+    }
+
+    // ================= COOLDOWN REMOVE =================
     if (interaction.commandName === "losowanieuczas") {
 
         const user = interaction.options.getUser("user");
@@ -176,10 +230,9 @@ client.on("interactionCreate", async interaction => {
         });
     }
 
-    // ================= BOOST START =================
+    // ================= BOOST =================
     if (interaction.commandName === "losowanieboost") {
 
-        // 🔥 AKTUALNE PROCENTY
         const current = globalBoost || {
             m5: 1,
             m3: 3,
@@ -189,31 +242,31 @@ client.on("interactionCreate", async interaction => {
 
         const modal = new ModalBuilder()
             .setCustomId(`boost_global`)
-            .setTitle("🌍 GLOBALNY BOOST");
+            .setTitle("🌍 BOOST");
 
         modal.addComponents(
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m5")
-                    .setLabel(`5M % (aktualnie ${current.m5}%)`)
+                    .setLabel(`5M (aktualnie ${current.m5}%)`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m3")
-                    .setLabel(`3M % (aktualnie ${current.m3}%)`)
+                    .setLabel(`3M (aktualnie ${current.m3}%)`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m2")
-                    .setLabel(`2M % (aktualnie ${current.m2}%)`)
+                    .setLabel(`2M (aktualnie ${current.m2}%)`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m1")
-                    .setLabel(`1M % (aktualnie ${current.m1}%)`)
+                    .setLabel(`1M (aktualnie ${current.m1}%)`)
                     .setStyle(TextInputStyle.Short)
             )
         );
@@ -221,7 +274,6 @@ client.on("interactionCreate", async interaction => {
         return interaction.showModal(modal);
     }
 
-    // ================= BOOST SUBMIT =================
     if (interaction.type === InteractionType.ModalSubmit &&
         interaction.customId === "boost_global") {
 
@@ -233,7 +285,7 @@ client.on("interactionCreate", async interaction => {
         };
 
         return interaction.reply({
-            content: `🔥 GLOBALNY BOOST ustawiony dla wszystkich!`,
+            content: "🔥 GLOBAL BOOST ustawiony!",
             ephemeral: true
         });
     }
@@ -244,7 +296,7 @@ client.on("interactionCreate", async interaction => {
         globalBoost = null;
 
         return interaction.reply({
-            content: "🛑 Globalny boost wyłączony — wrócono do normalnych procentów",
+            content: "🛑 Boost wyłączony",
             ephemeral: true
         });
     }
