@@ -59,7 +59,7 @@ client.once("ready", async () => {
     console.log(`🎲 Bot działa (${client.user.tag})`);
 
     db = loadDB();
-    saveDB(db); // 🔥 FIX: zapis po starcie
+    saveDB(db); // zapis startowy
 
     const commands = [
         new SlashCommandBuilder()
@@ -128,7 +128,7 @@ client.on("interactionCreate", async interaction => {
         }
 
         db.cooldowns[userId] = now + 2 * 60 * 60 * 1000;
-        saveDB(db); // 🔥 FIX: zapis cooldownu po ustawieniu
+        saveDB(db); // 🔥 FIX: zapis cooldownu
 
         const odds =
             db.globalBoost ||
@@ -295,7 +295,6 @@ client.on("interactionCreate", async interaction => {
         interaction.channel.send({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle("") // 🔥 FIX: brak tytułu
                     .setColor("#2ecc71")
                     .setDescription(tekst)
             ]
