@@ -76,7 +76,7 @@ client.once("ready", async () => {
                     .setRequired(true)
             ),
 
-        // 🔥 NOWA KOMENDA
+        // 🔥 KOMENDA WYMIANY (formularz)
         new SlashCommandBuilder()
             .setName("wymianawiadmo")
             .setDescription("Wyślij wiadomość o wymianie")
@@ -281,25 +281,43 @@ client.on("interactionCreate", async interaction => {
         });
     }
 
-    // ================= WYMIANA WIADOMOŚĆ =================
+    // ================= WYMIANA MODAL =================
     if (interaction.commandName === "wymianawiadmo") {
 
-        return interaction.reply({
+        const modal = new ModalBuilder()
+            .setCustomId("wymiana_modal")
+            .setTitle("💱 Wiadomość wymiany");
+
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId("tekst")
+                    .setLabel("Co bot ma wysłać?")
+                    .setStyle(TextInputStyle.Paragraph)
+            )
+        );
+
+        return interaction.showModal(modal);
+    }
+
+    // ================= WYMIANA SUBMIT =================
+    if (
+        interaction.type === InteractionType.ModalSubmit &&
+        interaction.customId === "wymiana_modal"
+    ) {
+        const tekst = interaction.fields.getTextInputValue("tekst");
+
+        await interaction.reply({
+            content: "✅ Wysłano wiadomość",
+            ephemeral: true
+        });
+
+        interaction.channel.send({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle("💱 Wymieniarka walut")
+                    .setTitle("💱 Wymieniarka")
                     .setColor("#2ecc71")
-                    .setDescription(
-`————————————————————
-🎈 **LifeSteal ➡️ OneBlock**
-1k = 900k
-
-🎈 **BoxPvp ➡️ OneBlock**
-100k = 350k
-————————————————————
-
-⚠️ Jeżeli jesteś zainteresowany — rozpocznij wymianę z nami!`
-                    )
+                    .setDescription(tekst)
             ]
         });
     }
