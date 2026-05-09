@@ -235,9 +235,9 @@ client.on("interactionCreate", async interaction => {
 
         const current = globalBoost || {
             m5: 1,
-            m3: 3,
-            m2: 7,
-            m1: 27
+            m3: 2,
+            m2: 6,
+            m1: 15
         };
 
         const modal = new ModalBuilder()
