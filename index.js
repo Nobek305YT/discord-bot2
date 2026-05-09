@@ -122,9 +122,9 @@ client.on("interactionCreate", async interaction => {
             globalBoost ||
             userBoosts.get(userId) || {
                 m5: 1,
-                m3: 3,
-                m2: 7,
-                m1: 27
+                m3: 2,
+                m2: 6,
+                m1: 15
             };
 
         const roll = Math.random() * 100;
