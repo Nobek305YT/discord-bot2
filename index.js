@@ -166,6 +166,7 @@ client.on("interactionCreate", async interaction => {
 `💰 ${reward}
 
 🎫 Napisz na ticket po nagrodę
+
 ⏰ Kolejny raz za: 2h`
                         )
                 ]
@@ -180,44 +181,12 @@ client.on("interactionCreate", async interaction => {
                 new EmbedBuilder()
                     .setTitle("💀 PRZEGRANA")
                     .setColor("#e74c3c")
-                    .setDescription(`❌ Nic nie wygrałeś\n⏰ Kolejny raz za: 2h`)
-            ]
-        });
-    }
-
-    // ================= STATS =================
-    if (interaction.commandName === "losowaniestats") {
-
-        const user = interaction.options.getUser("user");
-        const s = db.stats[user.id] || { played: 0, wins: 0, losses: 0, biggestWin: 0 };
-
-        return interaction.reply({
-            embeds: [
-                new EmbedBuilder()
-                    .setTitle(`📊 Statystyki ${user.username}`)
-                    .setColor("#3498db")
                     .setDescription(
-`🎲 Gry: ${s.played}
-🏆 Wygrane: ${s.wins}
-💀 Przegrane: ${s.losses}
-💰 Big win: ${s.biggestWin}`
+`❌ Nic nie wygrałeś
+
+⏰ Kolejny raz za: 2h`
                     )
-            ],
-            ephemeral: true
-        });
-    }
-
-    // ================= COOLDOWN REMOVE =================
-    if (interaction.commandName === "losowanieuczas") {
-
-        const user = interaction.options.getUser("user");
-
-        delete db.cooldowns[user.id];
-        saveDB(db);
-
-        return interaction.reply({
-            content: `✅ Usunięto cooldown dla <@${user.id}>`,
-            ephemeral: true
+            ]
         });
     }
 
@@ -239,25 +208,25 @@ client.on("interactionCreate", async interaction => {
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m5")
-                    .setLabel(`5M % (aktualnie: ${current.m5}%)`)
+                    .setLabel(`5M 💰 — aktualnie: ${current.m5}%`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m3")
-                    .setLabel(`3M % (aktualnie: ${current.m3}%)`)
+                    .setLabel(`3M 💰 — aktualnie: ${current.m3}%`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m2")
-                    .setLabel(`2M % (aktualnie: ${current.m2}%)`)
+                    .setLabel(`2M 💰 — aktualnie: ${current.m2}%`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m1")
-                    .setLabel(`1M % (aktualnie: ${current.m1}%)`)
+                    .setLabel(`1M 💰 — aktualnie: ${current.m1}%`)
                     .setStyle(TextInputStyle.Short)
             )
         );
@@ -278,7 +247,7 @@ client.on("interactionCreate", async interaction => {
         saveDB(db);
 
         return interaction.reply({
-            content: "🔥 GLOBALNY BOOST ustawiony!",
+            content: "🔥 BOOST ustawiony!",
             ephemeral: true
         });
     }
