@@ -190,6 +190,20 @@ client.on("interactionCreate", async interaction => {
         });
     }
 
+    // ================= LOSOWANIE UCZAS =================
+    if (interaction.commandName === "losowanieuczas") {
+
+        const user = interaction.options.getUser("user");
+
+        delete db.cooldowns[user.id];
+        saveDB(db);
+
+        return interaction.reply({
+            content: `✅ Usunięto cooldown dla <@${user.id}>`,
+            ephemeral: true
+        });
+    }
+
     // ================= BOOST =================
     if (interaction.commandName === "losowanieboost") {
 
@@ -208,25 +222,25 @@ client.on("interactionCreate", async interaction => {
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m5")
-                    .setLabel(`5M 💰 — aktualnie: ${current.m5}%`)
+                    .setLabel(`5M % (aktualnie: ${current.m5}%)`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m3")
-                    .setLabel(`3M 💰 — aktualnie: ${current.m3}%`)
+                    .setLabel(`3M % (aktualnie: ${current.m3}%)`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m2")
-                    .setLabel(`2M 💰 — aktualnie: ${current.m2}%`)
+                    .setLabel(`2M % (aktualnie: ${current.m2}%)`)
                     .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("m1")
-                    .setLabel(`1M 💰 — aktualnie: ${current.m1}%`)
+                    .setLabel(`1M % (aktualnie: ${current.m1}%)`)
                     .setStyle(TextInputStyle.Short)
             )
         );
