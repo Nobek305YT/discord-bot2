@@ -74,7 +74,13 @@ client.once("ready", async () => {
                 o.setName("user")
                     .setDescription("Użytkownik")
                     .setRequired(true)
-            )
+            ),
+
+        // 🔥 NOWA KOMENDA
+        new SlashCommandBuilder()
+            .setName("wymianawiadmo")
+            .setDescription("Wyślij wiadomość o wymianie")
+
     ].map(c => c.toJSON());
 
     const rest = new REST({ version: "10" }).setToken(TOKEN);
@@ -98,7 +104,6 @@ client.on("interactionCreate", async interaction => {
         const userId = interaction.user.id;
         const now = Date.now();
 
-        // stats init
         if (!stats.has(userId)) {
             stats.set(userId, { played: 0, wins: 0, losses: 0, biggestWin: 0 });
         }
@@ -130,24 +135,11 @@ client.on("interactionCreate", async interaction => {
         const roll = Math.random() * 100;
 
         let reward = null;
-        let chance = 0;
 
-        if (roll <= odds.m5) {
-            reward = "5 000 000 💰";
-            chance = odds.m5;
-        }
-        else if (roll <= odds.m3) {
-            reward = "3 000 000 💰";
-            chance = odds.m3;
-        }
-        else if (roll <= odds.m2) {
-            reward = "2 000 000 💰";
-            chance = odds.m2;
-        }
-        else if (roll <= odds.m1) {
-            reward = "1 000 000 💰";
-            chance = odds.m1;
-        }
+        if (roll <= odds.m5) reward = "5 000 000 💰";
+        else if (roll <= odds.m3) reward = "3 000 000 💰";
+        else if (roll <= odds.m2) reward = "2 000 000 💰";
+        else if (roll <= odds.m1) reward = "1 000 000 💰";
 
         const s = stats.get(userId);
         s.played++;
@@ -246,28 +238,16 @@ client.on("interactionCreate", async interaction => {
 
         modal.addComponents(
             new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId("m5")
-                    .setLabel(`5M (aktualnie ${current.m5}%)`)
-                    .setStyle(TextInputStyle.Short)
+                new TextInputBuilder().setCustomId("m5").setLabel(`5M (${current.m5}%)`).setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId("m3")
-                    .setLabel(`3M (aktualnie ${current.m3}%)`)
-                    .setStyle(TextInputStyle.Short)
+                new TextInputBuilder().setCustomId("m3").setLabel(`3M (${current.m3}%)`).setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId("m2")
-                    .setLabel(`2M (aktualnie ${current.m2}%)`)
-                    .setStyle(TextInputStyle.Short)
+                new TextInputBuilder().setCustomId("m2").setLabel(`2M (${current.m2}%)`).setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId("m1")
-                    .setLabel(`1M (aktualnie ${current.m1}%)`)
-                    .setStyle(TextInputStyle.Short)
+                new TextInputBuilder().setCustomId("m1").setLabel(`1M (${current.m1}%)`).setStyle(TextInputStyle.Short)
             )
         );
 
@@ -298,6 +278,29 @@ client.on("interactionCreate", async interaction => {
         return interaction.reply({
             content: "🛑 Boost wyłączony",
             ephemeral: true
+        });
+    }
+
+    // ================= WYMIANA WIADOMOŚĆ =================
+    if (interaction.commandName === "wymianawiadmo") {
+
+        return interaction.reply({
+            embeds: [
+                new EmbedBuilder()
+                    .setTitle("💱 Wymieniarka walut")
+                    .setColor("#2ecc71")
+                    .setDescription(
+`————————————————————
+🎈 **LifeSteal ➡️ OneBlock**
+1k = 900k
+
+🎈 **BoxPvp ➡️ OneBlock**
+100k = 350k
+————————————————————
+
+⚠️ Jeżeli jesteś zainteresowany — rozpocznij wymianę z nami!`
+                    )
+            ]
         });
     }
 });
