@@ -58,7 +58,7 @@ function formatTime(ms) {
 client.once("ready", async () => {
     console.log(`🎲 Bot działa (${client.user.tag})`);
 
-    db = loadDB(); // 🔥 reload DB po starcie
+    db = loadDB();
 
     const commands = [
         new SlashCommandBuilder()
@@ -74,7 +74,7 @@ client.once("ready", async () => {
 
         new SlashCommandBuilder()
             .setName("losowanieboost")
-            .setDescription("Ustaw boost szans"),
+            .setDescription("Ustaw globalny boost"),
 
         new SlashCommandBuilder()
             .setName("losowanieboostend")
@@ -82,15 +82,14 @@ client.once("ready", async () => {
 
         new SlashCommandBuilder()
             .setName("losowaniestats")
-            .setDescription("Statystyki losowania")
+            .setDescription("Statystyki")
             .addUserOption(o =>
                 o.setName("user").setDescription("Użytkownik").setRequired(true)
             ),
 
         new SlashCommandBuilder()
             .setName("botwiado")
-            .setDescription("Wyślij wiadomość przez bota")
-
+            .setDescription("Wiadomość bota")
     ].map(c => c.toJSON());
 
     const rest = new REST({ version: "10" }).setToken(TOKEN);
@@ -115,17 +114,19 @@ client.on("interactionCreate", async interaction => {
         const now = Date.now();
 
         db.stats[userId] ||= { played: 0, wins: 0, losses: 0, biggestWin: 0 };
+        db.cooldowns ||= {};
+        db.userBoosts ||= {};
 
         const nextTime = db.cooldowns[userId];
 
         if (nextTime && now < nextTime) {
             return interaction.reply({
-                content: `⏰ Kolejny raz możesz losować za:\n**${formatTime(nextTime - now)}**`,
+                content: `⏰ Kolejny raz za:\n**${formatTime(nextTime - now)}**`,
                 ephemeral: true
             });
         }
 
-        db.cooldowns[userId] = now + (2 * 60 * 60 * 1000);
+        db.cooldowns[userId] = now + 2 * 60 * 60 * 1000;
 
         const odds =
             db.globalBoost ||
@@ -161,7 +162,12 @@ client.on("interactionCreate", async interaction => {
                     new EmbedBuilder()
                         .setTitle("🎉 WYGRANA!")
                         .setColor("#f1c40f")
-                        .setDescription(`💰 **${reward}**\n🎫 Ticket po nagrodę`)
+                        .setDescription(
+`💰 ${reward}
+
+🎫 Napisz na ticket po nagrodę
+⏰ Kolejny raz za: 2h`
+                        )
                 ]
             });
         }
@@ -174,7 +180,7 @@ client.on("interactionCreate", async interaction => {
                 new EmbedBuilder()
                     .setTitle("💀 PRZEGRANA")
                     .setColor("#e74c3c")
-                    .setDescription("❌ Nic nie wygrałeś")
+                    .setDescription(`❌ Nic nie wygrałeś\n⏰ Kolejny raz za: 2h`)
             ]
         });
     }
@@ -188,7 +194,7 @@ client.on("interactionCreate", async interaction => {
         return interaction.reply({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle(`📊 Stats ${user.username}`)
+                    .setTitle(`📊 Statystyki ${user.username}`)
                     .setColor("#3498db")
                     .setDescription(
 `🎲 Gry: ${s.played}
@@ -227,20 +233,32 @@ client.on("interactionCreate", async interaction => {
 
         const modal = new ModalBuilder()
             .setCustomId("boost_global")
-            .setTitle("BOOST");
+            .setTitle("🔥 GLOBAL BOOST");
 
         modal.addComponents(
             new ActionRowBuilder().addComponents(
-                new TextInputBuilder().setCustomId("m5").setLabel(`5M (${current.m5}%)`).setStyle(TextInputStyle.Short)
+                new TextInputBuilder()
+                    .setCustomId("m5")
+                    .setLabel(`5M % (aktualnie: ${current.m5}%)`)
+                    .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
-                new TextInputBuilder().setCustomId("m3").setLabel(`3M (${current.m3}%)`).setStyle(TextInputStyle.Short)
+                new TextInputBuilder()
+                    .setCustomId("m3")
+                    .setLabel(`3M % (aktualnie: ${current.m3}%)`)
+                    .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
-                new TextInputBuilder().setCustomId("m2").setLabel(`2M (${current.m2}%)`).setStyle(TextInputStyle.Short)
+                new TextInputBuilder()
+                    .setCustomId("m2")
+                    .setLabel(`2M % (aktualnie: ${current.m2}%)`)
+                    .setStyle(TextInputStyle.Short)
             ),
             new ActionRowBuilder().addComponents(
-                new TextInputBuilder().setCustomId("m1").setLabel(`1M (${current.m1}%)`).setStyle(TextInputStyle.Short)
+                new TextInputBuilder()
+                    .setCustomId("m1")
+                    .setLabel(`1M % (aktualnie: ${current.m1}%)`)
+                    .setStyle(TextInputStyle.Short)
             )
         );
 
@@ -260,7 +278,7 @@ client.on("interactionCreate", async interaction => {
         saveDB(db);
 
         return interaction.reply({
-            content: "🔥 BOOST ustawiony globalnie!",
+            content: "🔥 GLOBALNY BOOST ustawiony!",
             ephemeral: true
         });
     }
@@ -272,7 +290,7 @@ client.on("interactionCreate", async interaction => {
         saveDB(db);
 
         return interaction.reply({
-            content: "🛑 Boost wyłączony",
+            content: "🛑 BOOST WYŁĄCZONY",
             ephemeral: true
         });
     }
@@ -282,7 +300,7 @@ client.on("interactionCreate", async interaction => {
 
         const modal = new ModalBuilder()
             .setCustomId("botwiado_modal")
-            .setTitle("✉️ Wiadomość");
+            .setTitle("📩 Wiadomość");
 
         modal.addComponents(
             new ActionRowBuilder().addComponents(
@@ -301,12 +319,12 @@ client.on("interactionCreate", async interaction => {
 
         const tekst = interaction.fields.getTextInputValue("tekst");
 
-        interaction.reply({ content: "✅ Wysłano", ephemeral: true });
+        await interaction.reply({ content: "✅ Wysłano", ephemeral: true });
 
         interaction.channel.send({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle("📢 Wiadomość")
+                    .setTitle("📢 Wiadomość bota")
                     .setColor("#2ecc71")
                     .setDescription(tekst)
             ]
