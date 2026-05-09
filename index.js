@@ -1,3 +1,5 @@
+const fs = require("fs");
+
 const {
     Client,
     GatewayIntentBits,
@@ -14,24 +16,33 @@ const {
 
 const TOKEN = process.env.TOKEN;
 
+// ================= DATABASE =================
+const DB_FILE = "./database.json";
+
+function loadDB() {
+    if (!fs.existsSync(DB_FILE)) {
+        fs.writeFileSync(DB_FILE, JSON.stringify({
+            cooldowns: {},
+            stats: {},
+            userBoosts: {},
+            globalBoost: null
+        }, null, 2));
+    }
+    return JSON.parse(fs.readFileSync(DB_FILE));
+}
+
+function saveDB(db) {
+    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+}
+
+let db = loadDB();
+
+// ================= CLIENT =================
 const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
-// ================= COOLDOWN =================
-const cooldown = new Map();
-const COOLDOWN_TIME = 2 * 60 * 60 * 1000; // 2h
-
-// ================= BOOST PER USER =================
-const userBoosts = new Map();
-
-// 🔥 GLOBAL BOOST
-let globalBoost = null;
-
-// ================= STATS =================
-const stats = new Map();
-
-// ===== FORMAT CZASU =====
+// ================= FORMAT =================
 function formatTime(ms) {
     if (ms <= 0) return "0s";
 
@@ -46,6 +57,8 @@ function formatTime(ms) {
 // ================= READY =================
 client.once("ready", async () => {
     console.log(`🎲 Bot działa (${client.user.tag})`);
+
+    db = loadDB(); // 🔥 reload DB po starcie
 
     const commands = [
         new SlashCommandBuilder()
@@ -71,15 +84,12 @@ client.once("ready", async () => {
             .setName("losowaniestats")
             .setDescription("Statystyki losowania")
             .addUserOption(o =>
-                o.setName("user")
-                    .setDescription("Użytkownik")
-                    .setRequired(true)
+                o.setName("user").setDescription("Użytkownik").setRequired(true)
             ),
 
-        // 🔥 KOMENDA WYMIANY (formularz)
         new SlashCommandBuilder()
-            .setName("wymianawiadmo")
-            .setDescription("Wyślij wiadomość o wymianie")
+            .setName("botwiado")
+            .setDescription("Wyślij wiadomość przez bota")
 
     ].map(c => c.toJSON());
 
@@ -104,28 +114,22 @@ client.on("interactionCreate", async interaction => {
         const userId = interaction.user.id;
         const now = Date.now();
 
-        if (!stats.has(userId)) {
-            stats.set(userId, { played: 0, wins: 0, losses: 0, biggestWin: 0 });
-        }
+        db.stats[userId] ||= { played: 0, wins: 0, losses: 0, biggestWin: 0 };
 
-        const nextTime = cooldown.get(userId);
+        const nextTime = db.cooldowns[userId];
 
         if (nextTime && now < nextTime) {
-            const left = nextTime - now;
-
             return interaction.reply({
-                content:
-`⏰ Kolejny raz możesz losować za:
-**${formatTime(left)}**`,
+                content: `⏰ Kolejny raz możesz losować za:\n**${formatTime(nextTime - now)}**`,
                 ephemeral: true
             });
         }
 
-        cooldown.set(userId, now + COOLDOWN_TIME);
+        db.cooldowns[userId] = now + (2 * 60 * 60 * 1000);
 
         const odds =
-            globalBoost ||
-            userBoosts.get(userId) || {
+            db.globalBoost ||
+            db.userBoosts[userId] || {
                 m5: 1,
                 m3: 2,
                 m2: 6,
@@ -141,7 +145,7 @@ client.on("interactionCreate", async interaction => {
         else if (roll <= odds.m2) reward = "2 000 000 💰";
         else if (roll <= odds.m1) reward = "1 000 000 💰";
 
-        const s = stats.get(userId);
+        const s = db.stats[userId];
         s.played++;
 
         if (reward) {
@@ -150,33 +154,27 @@ client.on("interactionCreate", async interaction => {
             const winValue = parseInt(reward.replace(/\D/g, ""));
             if (winValue > s.biggestWin) s.biggestWin = winValue;
 
+            saveDB(db);
+
             return interaction.reply({
                 embeds: [
                     new EmbedBuilder()
                         .setTitle("🎉 WYGRANA!")
                         .setColor("#f1c40f")
-                        .setDescription(
-`💰 **Wygrałeś: ${reward}**
-
-🎫 Po nagrodę napisz na ticket
-⏰ Kolejne losowanie za: **2h**`
-                        )
+                        .setDescription(`💰 **${reward}**\n🎫 Ticket po nagrodę`)
                 ]
             });
         }
 
         s.losses++;
+        saveDB(db);
 
         return interaction.reply({
             embeds: [
                 new EmbedBuilder()
                     .setTitle("💀 PRZEGRANA")
                     .setColor("#e74c3c")
-                    .setDescription(
-`❌ Nic nie wygrałeś
-
-⏰ Kolejne losowanie za: **2h**`
-                    )
+                    .setDescription("❌ Nic nie wygrałeś")
             ]
         });
     }
@@ -185,24 +183,18 @@ client.on("interactionCreate", async interaction => {
     if (interaction.commandName === "losowaniestats") {
 
         const user = interaction.options.getUser("user");
-
-        const s = stats.get(user.id) || {
-            played: 0,
-            wins: 0,
-            losses: 0,
-            biggestWin: 0
-        };
+        const s = db.stats[user.id] || { played: 0, wins: 0, losses: 0, biggestWin: 0 };
 
         return interaction.reply({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle(`📊 Statystyki ${user.username}`)
+                    .setTitle(`📊 Stats ${user.username}`)
                     .setColor("#3498db")
                     .setDescription(
-`🎲 Łączne losowania: ${s.played}
+`🎲 Gry: ${s.played}
 🏆 Wygrane: ${s.wins}
 💀 Przegrane: ${s.losses}
-💰 Biggest win: ${s.biggestWin} 💰`
+💰 Big win: ${s.biggestWin}`
                     )
             ],
             ephemeral: true
@@ -214,7 +206,8 @@ client.on("interactionCreate", async interaction => {
 
         const user = interaction.options.getUser("user");
 
-        cooldown.delete(user.id);
+        delete db.cooldowns[user.id];
+        saveDB(db);
 
         return interaction.reply({
             content: `✅ Usunięto cooldown dla <@${user.id}>`,
@@ -225,7 +218,7 @@ client.on("interactionCreate", async interaction => {
     // ================= BOOST =================
     if (interaction.commandName === "losowanieboost") {
 
-        const current = globalBoost || {
+        const current = db.globalBoost || {
             m5: 1,
             m3: 2,
             m2: 6,
@@ -233,8 +226,8 @@ client.on("interactionCreate", async interaction => {
         };
 
         const modal = new ModalBuilder()
-            .setCustomId(`boost_global`)
-            .setTitle("🌍 BOOST");
+            .setCustomId("boost_global")
+            .setTitle("BOOST");
 
         modal.addComponents(
             new ActionRowBuilder().addComponents(
@@ -257,15 +250,17 @@ client.on("interactionCreate", async interaction => {
     if (interaction.type === InteractionType.ModalSubmit &&
         interaction.customId === "boost_global") {
 
-        globalBoost = {
-            m5: parseFloat(interaction.fields.getTextInputValue("m5")),
-            m3: parseFloat(interaction.fields.getTextInputValue("m3")),
-            m2: parseFloat(interaction.fields.getTextInputValue("m2")),
-            m1: parseFloat(interaction.fields.getTextInputValue("m1"))
+        db.globalBoost = {
+            m5: +interaction.fields.getTextInputValue("m5"),
+            m3: +interaction.fields.getTextInputValue("m3"),
+            m2: +interaction.fields.getTextInputValue("m2"),
+            m1: +interaction.fields.getTextInputValue("m1")
         };
 
+        saveDB(db);
+
         return interaction.reply({
-            content: "🔥 GLOBAL BOOST ustawiony!",
+            content: "🔥 BOOST ustawiony globalnie!",
             ephemeral: true
         });
     }
@@ -273,7 +268,8 @@ client.on("interactionCreate", async interaction => {
     // ================= BOOST END =================
     if (interaction.commandName === "losowanieboostend") {
 
-        globalBoost = null;
+        db.globalBoost = null;
+        saveDB(db);
 
         return interaction.reply({
             content: "🛑 Boost wyłączony",
@@ -281,18 +277,18 @@ client.on("interactionCreate", async interaction => {
         });
     }
 
-    // ================= WYMIANA MODAL =================
-    if (interaction.commandName === "wymianawiadmo") {
+    // ================= BOT WIADOMOŚĆ =================
+    if (interaction.commandName === "botwiado") {
 
         const modal = new ModalBuilder()
-            .setCustomId("wymiana_modal")
-            .setTitle("💱 Wiadomość wymiany");
+            .setCustomId("botwiado_modal")
+            .setTitle("✉️ Wiadomość");
 
         modal.addComponents(
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("tekst")
-                    .setLabel("Co bot ma wysłać?")
+                    .setLabel("Wiadomość")
                     .setStyle(TextInputStyle.Paragraph)
             )
         );
@@ -300,22 +296,17 @@ client.on("interactionCreate", async interaction => {
         return interaction.showModal(modal);
     }
 
-    // ================= WYMIANA SUBMIT =================
-    if (
-        interaction.type === InteractionType.ModalSubmit &&
-        interaction.customId === "wymiana_modal"
-    ) {
+    if (interaction.type === InteractionType.ModalSubmit &&
+        interaction.customId === "botwiado_modal") {
+
         const tekst = interaction.fields.getTextInputValue("tekst");
 
-        await interaction.reply({
-            content: "✅ Wysłano wiadomość",
-            ephemeral: true
-        });
+        interaction.reply({ content: "✅ Wysłano", ephemeral: true });
 
         interaction.channel.send({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle("💱 Wymieniarka")
+                    .setTitle("📢 Wiadomość")
                     .setColor("#2ecc71")
                     .setDescription(tekst)
             ]
