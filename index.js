@@ -66,13 +66,6 @@ client.once("ready", async () => {
             .setDescription("Spróbuj swojego szczęścia!"),
 
         new SlashCommandBuilder()
-            .setName("losowanieuczas")
-            .setDescription("Usuń cooldown użytkownikowi")
-            .addUserOption(o =>
-                o.setName("user").setDescription("Użytkownik").setRequired(true)
-            ),
-
-        new SlashCommandBuilder()
             .setName("losowanieboost")
             .setDescription("Ustaw globalny boost"),
 
