@@ -133,9 +133,9 @@ client.on("interactionCreate", async interaction => {
         const odds =
             db.globalBoost ||
             db.userBoosts[userId] || {
-                m5: 1,
-                m3: 2,
-                m2: 6,
+                m5: 0.1,
+                m3: 1,
+                m2: 3,
                 m1: 15
             };
 
@@ -196,9 +196,9 @@ client.on("interactionCreate", async interaction => {
     if (interaction.commandName === "losowanieboost") {
 
         const current = db.globalBoost || {
-            m5: 1,
-            m3: 2,
-            m2: 6,
+            m5: 0.1,
+            m3: 1,
+            m2: 3,
             m1: 15
         };
 
